@@ -1,5 +1,4 @@
-// We'll use dynamic import for Rapier
-let RAPIER = null;
+// Use the global RAPIER object loaded from CDN
 
 /**
  * Initialize the physics world with gravity
@@ -7,17 +6,16 @@ let RAPIER = null;
  */
 export async function initPhysicsWorld() {
   try {
-    // Dynamically import Rapier
-    const rapierModule = await import('@dimforge/rapier3d');
+    // Check if RAPIER is available globally
+    if (typeof window.RAPIER === 'undefined') {
+      throw new Error('RAPIER is not loaded. Please check your internet connection.');
+    }
     
-    // Initialize Rapier
-    await rapierModule.init();
-    
-    // Store the module for later use
-    RAPIER = rapierModule;
+    // Wait for RAPIER to be initialized
+    await window.RAPIER.init();
     
     // Create a new physics world with gravity
-    return new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
+    return new window.RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
   } catch (error) {
     console.error('Failed to initialize Rapier:', error);
     throw new Error('Failed to initialize physics engine: ' + error.message);
@@ -30,15 +28,15 @@ export async function initPhysicsWorld() {
  * @returns {Object} The ground rigid body
  */
 export function createGround(world) {
-  if (!RAPIER) {
+  if (typeof window.RAPIER === 'undefined') {
     throw new Error('Physics engine not initialized');
   }
   
   const groundBody = world.createRigidBody(
-    RAPIER.RigidBodyDesc.fixed()
+    window.RAPIER.RigidBodyDesc.fixed()
   );
   world.createCollider(
-    RAPIER.ColliderDesc.cuboid(50, 0.1, 50),
+    window.RAPIER.ColliderDesc.cuboid(50, 0.1, 50),
     groundBody
   );
   return groundBody;
@@ -53,16 +51,16 @@ export function createGround(world) {
  * @returns {Object} The character rigid body
  */
 export function createCharacter(world, x = 0, y = 2, z = 0) {
-  if (!RAPIER) {
+  if (typeof window.RAPIER === 'undefined') {
     throw new Error('Physics engine not initialized');
   }
   
   const characterBody = world.createRigidBody(
-    RAPIER.RigidBodyDesc.dynamic()
+    window.RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(x, y, z)
   );
   world.createCollider(
-    RAPIER.ColliderDesc.capsule(0.5, 0.5),
+    window.RAPIER.ColliderDesc.capsule(0.5, 0.5),
     characterBody
   );
   return characterBody;
@@ -76,11 +74,11 @@ export function createCharacter(world, x = 0, y = 2, z = 0) {
  * @returns {boolean} Whether the character is on the ground
  */
 export function checkGroundContact(world, characterBody, rayLength = 1.6) {
-  if (!RAPIER) {
+  if (typeof window.RAPIER === 'undefined') {
     return false;
   }
   
-  const ray = new RAPIER.Ray(
+  const ray = new window.RAPIER.Ray(
     characterBody.translation(),
     { x: 0, y: -1, z: 0 }
   );

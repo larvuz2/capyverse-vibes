@@ -27,8 +27,5 @@ export default defineConfig({
         }
       }
     }
-  },
-  optimizeDeps: {
-    exclude: ['@dimforge/rapier3d']
   }
 }); 
