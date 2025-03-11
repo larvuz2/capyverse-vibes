@@ -11,6 +11,19 @@ export default defineConfig({
     topLevelAwait()
   ],
   build: {
-    target: 'esnext'
+    target: 'esnext',
+    minify: 'terser',
+    assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          rapier: ['@dimforge/rapier3d/rapier']
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@dimforge/rapier3d']
   }
 }); 

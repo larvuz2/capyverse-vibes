@@ -1,15 +1,14 @@
-// Use dynamic import for Rapier3D
-let RAPIER;
+// Import Rapier directly with a specific import
+import RAPIER from '@dimforge/rapier3d/rapier';
 
 /**
  * Initialize the physics world with gravity
  * @returns {Promise<RAPIER.World>} The physics world
  */
 export async function initPhysicsWorld() {
-  // Dynamically import Rapier
-  RAPIER = await import('@dimforge/rapier3d');
-  // Initialize Rapier
+  // Wait for Rapier to be ready
   await RAPIER.init();
+  // Create a new physics world with gravity
   return new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
 }
 

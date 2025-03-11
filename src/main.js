@@ -82,7 +82,7 @@ async function init() {
     }, 500);
   } catch (error) {
     console.error('Error initializing game:', error);
-    alert('Failed to initialize the physics engine. Please try again or check console for details.');
+    showErrorMessage('Failed to initialize the physics engine. Please check console for details.');
   }
 }
 
@@ -90,6 +90,19 @@ function updateLoadingProgress(percent, message) {
   if (loadingProgress) {
     loadingProgress.style.width = `${percent}%`;
     console.log(message);
+  }
+}
+
+function showErrorMessage(message) {
+  if (loadingScreen) {
+    loadingScreen.innerHTML = `
+      <div style="color: red; text-align: center; padding: 20px;">
+        <h2>Error</h2>
+        <p>${message}</p>
+        <p>This application requires WebAssembly support. Please use a modern browser.</p>
+        <button onclick="location.reload()">Try Again</button>
+      </div>
+    `;
   }
 }
 
