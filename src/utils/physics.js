@@ -8,7 +8,7 @@ let RAPIER = null;
 export async function initPhysicsWorld() {
   try {
     // Dynamically import Rapier
-    const rapierModule = await import('@dimforge/rapier3d/rapier.js');
+    const rapierModule = await import('@dimforge/rapier3d');
     
     // Initialize Rapier
     await rapierModule.init();

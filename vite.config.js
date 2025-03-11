@@ -30,10 +30,5 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['@dimforge/rapier3d']
-  },
-  resolve: {
-    alias: {
-      '@dimforge/rapier3d': '@dimforge/rapier3d/rapier.js'
-    }
   }
 }); 
