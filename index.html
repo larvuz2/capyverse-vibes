@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Physics Character Controller</title>
+    <script>
+        // Check for WebAssembly support
+        if (typeof WebAssembly === 'undefined') {
+            window.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('loading-screen').innerHTML = `
+                    <div style="color: red; text-align: center; padding: 20px;">
+                        <h2>Browser Not Supported</h2>
+                        <p>Your browser does not support WebAssembly, which is required for this application.</p>
+                        <p>Please use a modern browser like Chrome, Firefox, Safari, or Edge.</p>
+                    </div>
+                `;
+            });
+        }
+    </script>
 </head>
 <body>
     <div class="loading-screen" id="loading-screen">

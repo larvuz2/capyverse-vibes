@@ -47,6 +47,7 @@ async function init() {
   try {
     // Show loading progress
     updateLoadingProgress(10, 'Initializing physics...');
+    console.log('Initializing physics...');
     
     // Initialize physics
     world = await initPhysicsWorld();
@@ -82,7 +83,7 @@ async function init() {
     }, 500);
   } catch (error) {
     console.error('Error initializing game:', error);
-    showErrorMessage('Failed to initialize the physics engine. Please check console for details.');
+    showErrorMessage(`Failed to initialize the physics engine: ${error.message}`);
   }
 }
 
@@ -100,6 +101,7 @@ function showErrorMessage(message) {
         <h2>Error</h2>
         <p>${message}</p>
         <p>This application requires WebAssembly support. Please use a modern browser.</p>
+        <p>If you're using a modern browser, try disabling any content blockers or security extensions.</p>
         <button onclick="location.reload()">Try Again</button>
       </div>
     `;
@@ -109,33 +111,37 @@ function showErrorMessage(message) {
 function animate() {
   requestAnimationFrame(animate);
   
-  // Step physics
-  world.step();
-  
-  // Update character position
-  const position = characterBody.translation();
-  characterBody.userData.mesh.position.set(position.x, position.y, position.z);
-  
-  // Calculate movement direction based on keyboard input
-  const moveDirection = calculateMovementDirection(keys);
-  
-  // Apply movement to character
-  applyMovement(characterBody, moveDirection);
-  
-  // Check if character is on the ground
-  canJump = checkGroundContact(world, characterBody);
-  
-  // Apply jump if space is pressed and character is on the ground
-  if (keys.space && canJump) {
-    applyJump(characterBody);
-    canJump = false;
+  try {
+    // Step physics
+    world.step();
+    
+    // Update character position
+    const position = characterBody.translation();
+    characterBody.userData.mesh.position.set(position.x, position.y, position.z);
+    
+    // Calculate movement direction based on keyboard input
+    const moveDirection = calculateMovementDirection(keys);
+    
+    // Apply movement to character
+    applyMovement(characterBody, moveDirection);
+    
+    // Check if character is on the ground
+    canJump = checkGroundContact(world, characterBody);
+    
+    // Apply jump if space is pressed and character is on the ground
+    if (keys.space && canJump) {
+      applyJump(characterBody);
+      canJump = false;
+    }
+    
+    // Update camera to follow character
+    updateCameraPosition(camera, position);
+    
+    // Render the scene
+    renderer.render(scene, camera);
+  } catch (error) {
+    console.error('Error in animation loop:', error);
   }
-  
-  // Update camera to follow character
-  updateCameraPosition(camera, position);
-  
-  // Render the scene
-  renderer.render(scene, camera);
 }
 
 // Start the game
