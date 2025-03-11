@@ -1,151 +1,129 @@
 import * as THREE from 'three';
-import RAPIER from '@dimforge/rapier3d';
+import './style.css';
+import { 
+  initPhysicsWorld, 
+  createGround, 
+  createCharacter, 
+  checkGroundContact, 
+  applyMovement, 
+  applyJump 
+} from './utils/physics.js';
+import { 
+  createKeyboardControls, 
+  calculateMovementDirection, 
+  handleWindowResize, 
+  updateCameraPosition 
+} from './utils/controls.js';
+import { 
+  createGroundMesh, 
+  createCharacterMesh, 
+  createScene, 
+  createCamera, 
+  createRenderer 
+} from './utils/objects.js';
 
 // Scene setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+const scene = createScene();
+const camera = createCamera();
+const renderer = createRenderer();
 document.body.appendChild(renderer.domElement);
 
-// Physics setup
+// Physics variables
 let world, characterBody, groundBody;
-let moveDirection = { x: 0, z: 0 };
 let canJump = false;
 
-async function initPhysics() {
-    await RAPIER.init();
-    world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
-    
-    // Ground
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);
-    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
-    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-    groundMesh.rotation.x = -Math.PI / 2;
-    scene.add(groundMesh);
-    
-    groundBody = world.createRigidBody(
-        RAPIER.RigidBodyDesc.fixed()
-    );
-    world.createCollider(
-        RAPIER.ColliderDesc.cuboid(50, 0.1, 50),
-        groundBody
-    );
+// Keyboard controls
+const keys = createKeyboardControls();
 
-    // Character (Capsule)
-    const capsuleGeometry = new THREE.CapsuleGeometry(0.5, 1, 16);
-    const capsuleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const capsuleMesh = new THREE.Mesh(capsuleGeometry, capsuleMaterial);
-    scene.add(capsuleMesh);
+// Handle window resize
+handleWindowResize(camera, renderer);
+
+// Loading screen elements
+const loadingScreen = document.getElementById('loading-screen');
+const loadingProgress = document.getElementById('loading-progress');
+
+// Initialize the game
+async function init() {
+  try {
+    // Show loading progress
+    updateLoadingProgress(10, 'Initializing physics...');
     
-    characterBody = world.createRigidBody(
-        RAPIER.RigidBodyDesc.dynamic()
-            .setTranslation(0, 2, 0)
-    );
-    world.createCollider(
-        RAPIER.ColliderDesc.capsule(0.5, 0.5),
-        characterBody
-    );
+    // Initialize physics
+    world = await initPhysicsWorld();
+    updateLoadingProgress(40, 'Creating world...');
+    
+    // Create ground
+    groundBody = createGround(world);
+    const groundMesh = createGroundMesh();
+    scene.add(groundMesh);
+    updateLoadingProgress(60, 'Creating character...');
+    
+    // Create character
+    characterBody = createCharacter(world);
+    const characterMesh = createCharacterMesh();
+    scene.add(characterMesh);
     
     // Store mesh reference in body for updating position
-    characterBody.userData = { mesh: capsuleMesh };
+    characterBody.userData = { mesh: characterMesh };
+    
+    // Set initial camera position
+    camera.position.set(0, 5, 10);
+    camera.lookAt(0, 0, 0);
+    
+    updateLoadingProgress(90, 'Finalizing...');
+    
+    // Hide loading screen
+    setTimeout(() => {
+      if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+      }
+      // Start animation loop
+      animate();
+    }, 500);
+  } catch (error) {
+    console.error('Error initializing game:', error);
+    alert('Failed to initialize the physics engine. Please try again or check console for details.');
+  }
 }
 
-camera.position.set(0, 5, 10);
-camera.lookAt(0, 0, 0);
-
-// Keyboard controls
-const keys = {
-    w: false,
-    a: false,
-    s: false,
-    d: false,
-    space: false
-};
-
-window.addEventListener('keydown', (e) => {
-    switch(e.key.toLowerCase()) {
-        case 'w': keys.w = true; break;
-        case 'a': keys.a = true; break;
-        case 's': keys.s = true; break;
-        case 'd': keys.d = true; break;
-        case ' ': keys.space = true; break;
-    }
-});
-
-window.addEventListener('keyup', (e) => {
-    switch(e.key.toLowerCase()) {
-        case 'w': keys.w = false; break;
-        case 'a': keys.a = false; break;
-        case 's': keys.s = false; break;
-        case 'd': keys.d = false; break;
-        case ' ': keys.space = false; break;
-    }
-});
-
-function updateMovement() {
-    moveDirection.x = 0;
-    moveDirection.z = 0;
-    const speed = 5;
-
-    if (keys.w) moveDirection.z = -speed;
-    if (keys.s) moveDirection.z = speed;
-    if (keys.a) moveDirection.x = -speed;
-    if (keys.d) moveDirection.x = speed;
-
-    // Apply movement
-    const currentVel = characterBody.linvel();
-    characterBody.setLinvel(
-        { x: moveDirection.x, y: currentVel.y, z: moveDirection.z },
-        true
-    );
-
-    // Jump
-    if (keys.space && canJump) {
-        characterBody.setLinvel({ x: currentVel.x, y: 5, z: currentVel.z }, true);
-        canJump = false;
-    }
-}
-
-function checkGroundCollision() {
-    const ray = new RAPIER.Ray(
-        characterBody.translation(),
-        { x: 0, y: -1, z: 0 }
-    );
-    const toi = world.castRay(ray, 1.6, true);
-    canJump = toi !== null && toi.toi < 1.6;
+function updateLoadingProgress(percent, message) {
+  if (loadingProgress) {
+    loadingProgress.style.width = `${percent}%`;
+    console.log(message);
+  }
 }
 
 function animate() {
-    requestAnimationFrame(animate);
-    
-    // Step physics
-    world.step();
-    
-    // Update character position
-    const position = characterBody.translation();
-    characterBody.userData.mesh.position.set(position.x, position.y, position.z);
-    
-    updateMovement();
-    checkGroundCollision();
-    
-    // Camera follow
-    camera.position.set(
-        position.x,
-        position.y + 5,
-        position.z + 10
-    );
-    camera.lookAt(position.x, position.y, position.z);
-    
-    renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  
+  // Step physics
+  world.step();
+  
+  // Update character position
+  const position = characterBody.translation();
+  characterBody.userData.mesh.position.set(position.x, position.y, position.z);
+  
+  // Calculate movement direction based on keyboard input
+  const moveDirection = calculateMovementDirection(keys);
+  
+  // Apply movement to character
+  applyMovement(characterBody, moveDirection);
+  
+  // Check if character is on the ground
+  canJump = checkGroundContact(world, characterBody);
+  
+  // Apply jump if space is pressed and character is on the ground
+  if (keys.space && canJump) {
+    applyJump(characterBody);
+    canJump = false;
+  }
+  
+  // Update camera to follow character
+  updateCameraPosition(camera, position);
+  
+  // Render the scene
+  renderer.render(scene, camera);
 }
 
-// Handle window resize
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Start
-initPhysics().then(() => animate()); 
+// Start the game
+init(); 
