@@ -13,6 +13,12 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true
+      }
+    },
     assetsInlineLimit: 0,
     rollupOptions: {
       output: {
